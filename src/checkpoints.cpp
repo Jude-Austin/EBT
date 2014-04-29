@@ -33,7 +33,8 @@ namespace Checkpoints
         (       1, uint256("0x0000233ff0649623da93721bbd0ae50567f092a6b25ed70bbb6be6dbb5ea15d2"))
         (   70000, uint256("0x000000008dfe1a0248b1d004e8f09da0cb5ff0a0774d0dc89691931f9a443588"))
         (  148965, uint256("0x00000001152f242aac954c4698888328b3399bf66dede8c6685054e2495c615d"))
-        (  264656,                                                                       uint256("0x0000000219e8f2ab079ce66d6cc68f7ede0c70c705c71c3d0896184f5e0c53b1"))
+        (  210001, uint256("0x000000057f97806270256152227d4a6995f0769907386ff2bfdd497bde0f5f53"))
+        (  264656, uint256("0x0000000219e8f2ab079ce66d6cc68f7ede0c70c705c71c3d0896184f5e0c53b1"))
         ;
 
     bool CheckHardened(int nHeight, const uint256& hash)
