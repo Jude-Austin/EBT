@@ -547,6 +547,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     // Set icon state: spinning if catching up, tick otherwise
     if(secs < 90*60 && count >= nTotalBlocks)
     {
+        printf("Up to date...Total blocks: %d", nTotalBlocks);
         tooltip = tr("Up to date") + QString(".<br>") + tooltip;
         labelBlocksIcon->setPixmap(QIcon(":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
 
@@ -554,6 +555,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     }
     else
     {
+        printf("Catching up...Total blocks: %d", nTotalBlocks);
         tooltip = tr("Catching up...") + QString("<br>") + tooltip;
         labelBlocksIcon->setMovie(syncIconMovie);
         syncIconMovie->start();

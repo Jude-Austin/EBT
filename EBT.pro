@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = ebt-qt
-VERSION = 0.7.2
+VERSION = 2.0.1.1
 INCLUDEPATH += src src/json src/qt
 macx:INCLUDEPATH += /opt/local/include/db48
 windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/include/boost-1_55/

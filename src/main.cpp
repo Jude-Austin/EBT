@@ -939,35 +939,34 @@ uint256 WantedByOrphan(const CBlock* pblockOrphan)
 // miner's coin base reward based on nBits
 int64 GetProofOfWorkReward(unsigned int nHeight)
 {
-				int64 nSubsidy = 1 * COIN;
+        int64 nSubsidy = 0;
 
-		if (nHeight < 2)
-		    nSubsidy = 2500000 * COIN;
-		else if (nHeight < 100000)
-		    nSubsidy = 1000 * COIN;
-		else if (nHeight < 200000)
-		    nSubsidy = 500 * COIN;
-		else if (nHeight < 300000)
-		    nSubsidy = 250 * COIN;
-		else if (nHeight < 400000)
-		    nSubsidy = 125 * COIN;
-		else if (nHeight < 500000)
-		    nSubsidy = 62.5 *COIN;
-		else if (nHeight < 600000)
-		    nSubsidy = 32.25 *COIN;
-		else if (nHeight < 700000)
-		    nSubsidy = 15.625 * COIN;
-		else if (nHeight < 800000)
-		    nSubsidy = 7.8125 * COIN;
-		else if (nHeight < 900000)
-		    nSubsidy = 3.90625 * COIN;
-		else if (nHeight < 1000000)
-		    nSubsidy = 1.953125 * COIN;
-		else if (nHeight < 1100000)
-		    nSubsidy = 1 * COIN;
+        if (nHeight < 2)
+            nSubsidy = 2500000 * COIN;
+        else if (nHeight < 100000)
+            nSubsidy = 1000 * COIN;
+        else if (nHeight < 200000)
+            nSubsidy = 500 * COIN;
+        else if (nHeight < 300000)
+            nSubsidy = 250 * COIN;
+        else if (nHeight < 400000)
+            nSubsidy = 125 * COIN;
+        else if (nHeight < 500000)
+            nSubsidy = 62.5 *COIN;
+        else if (nHeight < 600000)
+            nSubsidy = 32.25 *COIN;
+        else if (nHeight < 700000)
+            nSubsidy = 15.625 * COIN;
+        else if (nHeight < 800000)
+            nSubsidy = 7.8125 * COIN;
+        else if (nHeight < 900000)
+            nSubsidy = 3.90625 * COIN;
+        else if (nHeight < 1000000)
+            nSubsidy = 1.953125 * COIN;
+        else if (nHeight < 1100000)
+            nSubsidy = 1 * COIN;
 
-	    
-	    return nSubsidy;
+        return nSubsidy;
 
 }
 
@@ -1039,9 +1038,14 @@ static const int64 nTargetSpacingWorkMax = 12 * nStakeTargetSpacing; // 12 minut
 // minimum amount of work that could possibly be required nTime after
 // minimum work required was nBase
 //
-unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
+unsigned int ComputeMinWork(unsigned int nBase, int64 nTime, bool fProofOfStake)
 {
-    CBigNum bnTargetLimit = bnProofOfWorkLimit;
+    CBigNum bnTargetLimit;
+    if (fProofOfStake) {
+         bnTargetLimit = bnProofOfStakeLimit;
+    } else {
+         bnTargetLimit = bnProofOfWorkLimit;
+    }
 
     CBigNum bnResult;
     bnResult.SetCompact(nBase);
@@ -2266,12 +2270,23 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
         CBigNum bnNewBlock;
         bnNewBlock.SetCompact(pblock->nBits);
         CBigNum bnRequired;
-        bnRequired.SetCompact(ComputeMinWork(GetLastBlockIndex(pcheckpoint, pblock->IsProofOfStake())->nBits, deltaTime));
+        bnRequired.SetCompact(ComputeMinWork(GetLastBlockIndex(pcheckpoint, pblock->IsProofOfStake())->nBits, deltaTime, pblock->IsProofOfStake()));
         if (bnNewBlock > bnRequired)
         {
             if (pfrom)
                 pfrom->Misbehaving(100);
-            return error("ProcessBlock() : block with too little %s", pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work");
+
+            printf("Too little %s: (%s > %s)\n",
+                               pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work",
+                   bnNewBlock.ToString().c_str(), bnRequired.ToString().c_str());
+            printf("Block %s:", hash.ToString().c_str());
+            return error("ProcessBlock() : block with too little %s",
+                               pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work");
+        } else {
+            printf("Enough %s: (%s <= %s)\n",
+                               pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work",
+                   bnNewBlock.ToString().c_str(), bnRequired.ToString().c_str());
+            printf("Block %s:", hash.ToString().c_str());
         }
     }
 
@@ -2820,7 +2835,9 @@ string GetWarnings(string strFor)
 	{
 		nPriority = 100;
 		strStatusBar = "WARNING: Checkpoint is too old. Wait for block chain to download, or notify developers.";
-	}
+	} else {
+                strStatusBar = "";
+        }
 
 
     // ppcoin: if detected invalid checkpoint enter safe mode
@@ -3416,7 +3433,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CBlock block;
         vRecv >> block;
 
-        printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
+        printf("received block %s\n", block.GetHash().ToString().c_str());
         // block.print();
 
         CInv inv(MSG_BLOCK, block.GetHash());
