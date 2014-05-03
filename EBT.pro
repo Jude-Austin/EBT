@@ -1,14 +1,16 @@
 TEMPLATE = app
 TARGET = ebt-qt
-VERSION = 2.0.1.1
+VERSION = 2.0.1.2
 INCLUDEPATH += src src/json src/qt
-macx:INCLUDEPATH += /opt/local/include/db48
+macx:INCLUDEPATH += /usr/local/BerkeleyDB.4.8/include # /usr/local/include
 windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/include/boost-1_55/
 windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/include
 windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/ssl/include
 # INCLUDEPATH += C:/MinGW/msys/1.0/local/BerkeleyDB.4.8/include
-DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE BOOST_THREAD_PROVIDES_GENERIC_SHARED_MUTEX_ON_WIN __NO_SYSTEM_INCLUDES
-CONFIG += no_include_pwd static
+DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE \
+           BOOST_THREAD_PROVIDES_GENERIC_SHARED_MUTEX_ON_WIN __NO_SYSTEM_INCLUDES
+CONFIG += no_include_pwd
+!macx:CONFIG += static
 
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
@@ -26,22 +28,23 @@ UI_DIR = build
 
 # use: qmake "RELEASE=1"
 contains(RELEASE, 1) {
-    # Mac: compile for maximum compatibility (10.5, 32-bit)
-    macx:XXFLAGS += -mmacosx-version-min=10.7 -arch x86_64 -isysroot /Developer/SDKs/MacOSX10.7.sdk
-
+    # Mac: compile for maximum compatibility (10.7, 64-bit)
+    macx:XXFLAGS += -mmacosx-version-min=10.7 -arch x86_64 \
+                    -isysroot /Developer/SDKs/MacOSX10.7.sdk
     !windows:!macx {
         # Linux: static link
         LIBS += -Wl,-Bstatic
     }
 }
 
-macx:mystaticconfig {
-  QMAKE_LIBS_QT =
-  QMAKE_LIBS_QT_THREAD =
-  LIBS += $(QTDIR)/lib/libqt.a -lz -framework Carbon
-  LIBS += /usr/local/lib/libqrencode.3.dylib
-  CONFIG += mystaticconfig
-}
+# OS X is never static
+# macx:mystaticconfig {
+#   QMAKE_LIBS_QT =
+#   QMAKE_LIBS_QT_THREAD =
+#   LIBS += $(QTDIR)/lib/libqt.a -lz -framework Carbon
+#   LIBS += /usr/local/lib/libqrencode.3.dylib
+#   CONFIG += mystaticconfig
+# }
 
 # bug in gcc 4.4 breaks some pointer code
 # QMAKE_CXXFLAGS += -fno-strict-aliasing
@@ -58,7 +61,10 @@ contains(USE_QRCODE, 1) {
     DEFINES += USE_QRCODE
     windows:INCLUDEPATH += C:/qrencode-3.4.3
     windows:LIBS += -L"C:/qrencode-3.4.3"
+    macx:LIBS += /usr/local/lib/libqrencode.3.dylib
     LIBS += -lqrencode
+} else {
+    message(Building without QRCode support)
 }
 
 USE_UPNP=1
@@ -128,6 +134,8 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/addresstablemodel.h \
     src/qt/optionsdialog.h \
     src/qt/sendcoinsdialog.h \
+    src/qt/coincontroldialog.h \
+    src/qt/coincontroltreewidget.h \
     src/qt/addressbookpage.h \
     src/qt/signverifymessagedialog.h \
     src/qt/aboutdialog.h \
@@ -138,6 +146,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/base58.h \
     src/bignum.h \
     src/checkpoints.h \
+    src/coincontrol.h \
     src/compat.h \
     src/sync.h \
     src/util.h \
@@ -203,6 +212,8 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/addresstablemodel.cpp \
     src/qt/optionsdialog.cpp \
     src/qt/sendcoinsdialog.cpp \
+    src/qt/coincontroldialog.cpp \
+    src/qt/coincontroltreewidget.cpp \
     src/qt/addressbookpage.cpp \
     src/qt/signverifymessagedialog.cpp \
     src/qt/aboutdialog.cpp \
@@ -268,6 +279,7 @@ RESOURCES += \
 
 FORMS += \
     src/qt/forms/sendcoinsdialog.ui \
+    src/qt/forms/coincontroldialog.ui \
     src/qt/forms/addressbookpage.ui \
     src/qt/forms/signverifymessagedialog.ui \
     src/qt/forms/aboutdialog.ui \
@@ -321,7 +333,7 @@ OTHER_FILES += \
 
 # platform specific defaults, if not overridden on command line
 isEmpty(BOOST_LIB_SUFFIX) {
-    macx:BOOST_LIB_SUFFIX = -mt
+    macx:BOOST_LIB_SUFFIX =  -mt
     windows:BOOST_LIB_SUFFIX = -mgw44-mt-d-1_55
 }
 
@@ -330,7 +342,7 @@ isEmpty(BOOST_THREAD_LIB_SUFFIX) {
 }
 
 isEmpty(BDB_LIB_PATH) {
-    macx:BDB_LIB_PATH = /opt/local/lib/db48
+    macx:BDB_LIB_PATH = /usr/local/BerkeleyDB.4.8/lib  # /opt/local/lib/db48
 }
 
 isEmpty(BDB_LIB_SUFFIX) {
@@ -338,7 +350,7 @@ isEmpty(BDB_LIB_SUFFIX) {
 }
 
 isEmpty(BDB_INCLUDE_PATH) {
-    macx:BDB_INCLUDE_PATH = /opt/local/include/db48
+    macx:BDB_INCLUDE_PATH = /usr/local/BerkeleyDB.4.8/include
 }
 
 isEmpty(BOOST_LIB_PATH) {
@@ -349,7 +361,6 @@ isEmpty(BOOST_INCLUDE_PATH) {
     macx:BOOST_INCLUDE_PATH = /opt/local/include
 }
 
-windows:LIBS += -lws2_32 -lshlwapi -lmswsock
 windows:DEFINES += WIN32
 windows:RC_FILE = src/qt/res/bitcoin-qt.rc
 
@@ -364,7 +375,7 @@ windows:!contains(MINGW_THREAD_BUGFIX, 0) {
     QMAKE_LIBS_QT_ENTRY = -lmingwthrd $$QMAKE_LIBS_QT_ENTRY
 }
 
-!windows:!mac {
+!windows:!macx {
     DEFINES += LINUX
     LIBS += -lrt
 }
@@ -384,12 +395,20 @@ INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$
 windows:LIBS += -L"C:/MinGW/msys/1.0/local/ssl/lib"
 # windows:LIBS += -L"C:/MinGW/msys/1.0/local/BerkeleyDB.4.8/lib"
 windows:LIBS += -L"C:/MinGW/msys/1.0/local/lib"
-LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
+LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) \
+        $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
+
 windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
+
+LIBS += -lboost_system$$BOOST_LIB_SUFFIX \
+        -lboost_filesystem$$BOOST_LIB_SUFFIX \
+        -lboost_program_options$$BOOST_LIB_SUFFIX \
+        -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
+LIBS += -lboost_atomic$$BOOST_LIB_SUFFIX
 windows:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
+# macx:LIBS += -L/usr/local/lib
 
 contains(RELEASE, 1) {
     !windows:!macx {
