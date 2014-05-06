@@ -70,6 +70,11 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 {
     resize(850, 550);
     setWindowTitle(tr("EBT") + " - " + tr("Wallet"));
+    this->setStyleSheet("QMainWindow {background-color: white;} "
+                        "SendCoinsEntry {background-color: white;} "
+                        "transactionView {background-color: white;} "
+                        "TransactionView {background-color: white;}");
+
 #ifndef Q_OS_MAC
     qApp->setWindowIcon(QIcon(":icons/bitcoin"));
     setWindowIcon(QIcon(":icons/bitcoin"));
@@ -547,7 +552,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     // Set icon state: spinning if catching up, tick otherwise
     if(secs < 90*60 && count >= nTotalBlocks)
     {
-        printf("Up to date...Total blocks: %d", nTotalBlocks);
+        printf("Up to date...Total blocks: %d\n", nTotalBlocks);
         tooltip = tr("Up to date") + QString(".<br>") + tooltip;
         labelBlocksIcon->setPixmap(QIcon(":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
 
@@ -555,7 +560,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     }
     else
     {
-        printf("Catching up...Total blocks: %d", nTotalBlocks);
+        printf("Catching up...Total blocks: %d\n", nTotalBlocks);
         tooltip = tr("Catching up...") + QString("<br>") + tooltip;
         labelBlocksIcon->setMovie(syncIconMovie);
         syncIconMovie->start();
