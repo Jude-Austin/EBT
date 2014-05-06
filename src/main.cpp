@@ -37,7 +37,6 @@ static CBigNum bnProofOfWorkLimit(~uint256(0) >> 16);
 static CBigNum bnProofOfStakeLimit(~uint256(0) >> 24);
 static CBigNum bnProofOfStakeHardLimit(~uint256(0) >> 30); // disabled temporarily, will be used in the future to fix minimum PoS difficulty at 0.25
 
-
 static CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 16);
 static CBigNum bnProofOfStakeLimitTestNet(~uint256(0) >> 20);
 
@@ -938,6 +937,8 @@ uint256 WantedByOrphan(const CBlock* pblockOrphan)
 // miner's coin base reward based on nBits
 int64 GetProofOfWorkReward(unsigned int nHeight)
 {
+        printf("GetProofOfWorkReward pblock nHeight: %d\n", nHeight);
+
         int64 nSubsidy = 0;
 
         if (nHeight < 2)
@@ -950,20 +951,6 @@ int64 GetProofOfWorkReward(unsigned int nHeight)
             nSubsidy = 250 * COIN;
         else if (nHeight < 400000)
             nSubsidy = 125 * COIN;
-        else if (nHeight < 500000)
-            nSubsidy = 62.5 *COIN;
-        else if (nHeight < 600000)
-            nSubsidy = 32.25 *COIN;
-        else if (nHeight < 700000)
-            nSubsidy = 15.625 * COIN;
-        else if (nHeight < 800000)
-            nSubsidy = 7.8125 * COIN;
-        else if (nHeight < 900000)
-            nSubsidy = 3.90625 * COIN;
-        else if (nHeight < 1000000)
-            nSubsidy = 1.953125 * COIN;
-        else if (nHeight < 1100000)
-            nSubsidy = 1 * COIN;
 
         return nSubsidy;
 
@@ -1107,8 +1094,9 @@ unsigned int static GetNextTargetRequired(const CBlockIndex* pindexLast, bool fP
     bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
     bnNew /= ((nInterval + 1) * nTargetSpacing);
 
+    
     if (bnNew > bnTargetLimit)
-        bnNew = bnTargetLimit;
+      bnNew = bnTargetLimit;
 
     return bnNew.GetCompact();
 }
@@ -4020,6 +4008,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
 
     // ppcoin: if coinstake available add coinstake tx
     static int64 nLastCoinStakeSearchTime = GetAdjustedTime();  // only initialized at startup
+
     CBlockIndex* pindexPrev = pindexBest;
 
     if (fProofOfStake)  // attempt to find a coinstake
@@ -4240,6 +4229,9 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
 
         if (pblock->IsProofOfWork())
             pblock->vtx[0].vout[0].nValue = GetProofOfWorkReward(pindexPrev->nHeight+1);
+
+        printf("CreateNewBlock pblock nHeight: %d\n", pindexPrev->nHeight+1);
+        printf("CreateNewBlock pblock nValue: %d\n", pblock->vtx[0].vout[0].nValue);
 
         // Fill in header
         pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
