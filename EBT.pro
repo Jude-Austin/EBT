@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = ebt-qt
-VERSION = 3.0.0.1
+VERSION = 3.0.0.2
 INCLUDEPATH += src src/json src/qt
 macx:INCLUDEPATH += /usr/local/BerkeleyDB.4.8/include # /usr/local/include
 windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/include/boost-1_55/
