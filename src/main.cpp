@@ -949,7 +949,7 @@ int64 GetProofOfWorkReward(unsigned int nHeight)
             nSubsidy = 500 * COIN;
         else if (nHeight < 300000)
             nSubsidy = 250 * COIN;
-        else if (nHeight < 400000)
+        else if (nHeight < 310000)
             nSubsidy = 125 * COIN;
 
         return nSubsidy;
