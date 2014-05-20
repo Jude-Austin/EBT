@@ -2066,8 +2066,8 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot) const
     // Check coinbase reward
     int64 nTimeBlock = GetBlockTime();
     CBlockIndex* pindexPrev = pindexBest;
-    if ((pindexPrev->nHeight >= PoSTakeoverHeight) && (IsProofOfWork()))
-          return DoS(100, error("CheckBlock() : Proof of work on or after block %d.\n", PoSTakeoverHeight));
+    if ((pindexPrev->nHeight >= (int) PoSTakeoverHeight) && (IsProofOfWork()))
+          return DoS(100, error("CheckBlock() : Proof of work on or after block %d.\n", (int) PoSTakeoverHeight));
     if (nTimeBlock < REWARD_SWITCH_TIME) {
 		if (vtx[0].GetValueOut() > (IsProofOfWork()? MAX_MINT_PROOF_OF_WORK_LEGACY : 0))
 		    return DoS(50, error("CheckBlock() : coinbase reward exceeded %s > %s",
@@ -4244,7 +4244,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
             pblock->vtx[0].vout[0].nValue = GetProofOfWorkReward(pindexPrev->nHeight+1);
 
         printf("CreateNewBlock pblock nHeight: %d\n", pindexPrev->nHeight+1);
-        printf("CreateNewBlock pblock nValue: %d\n", pblock->vtx[0].vout[0].nValue);
+        printf("CreateNewBlock pblock nValue: %d\n", (int) pblock->vtx[0].vout[0].nValue);
 
         // Fill in header
         pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
