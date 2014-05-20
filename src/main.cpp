@@ -2067,7 +2067,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot) const
     int64 nTimeBlock = GetBlockTime();
     CBlockIndex* pindexPrev = pindexBest;
     if ((pindexPrev->nHeight >= PoSTakeoverHeight) && (IsProofOfWork()))
-          return DoS(100, error("Proof of work on or after block %d.", PoSTakeoverHeight));
+          return DoS(100, error("CheckBlock() : Proof of work on or after block %d.\n", PoSTakeoverHeight));
     if (nTimeBlock < REWARD_SWITCH_TIME) {
 		if (vtx[0].GetValueOut() > (IsProofOfWork()? MAX_MINT_PROOF_OF_WORK_LEGACY : 0))
 		    return DoS(50, error("CheckBlock() : coinbase reward exceeded %s > %s",
@@ -2254,11 +2254,12 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     CBlockLocator locator;
     unsigned int nHeight = locator.GetBlockIndex()->nHeight;
 
-    if (pblock->IsProofOfWork() && (nHeight >= PoSTakeoverHeight))
+    if (pblock->IsProofOfWork() && (nHeight >= PoSTakeoverHeight)) {
         if (pfrom)
               pfrom->Misbehaving(100);
-        printf("Proof of work on or after block %d.", PoSTakeoverHeight);
-        return error("Proof of work on or after block %d.", PoSTakeoverHeight);
+        printf("Proof of work on or after block %d.\n", PoSTakeoverHeight);
+        return error("Proof of work on or after block %d.\n", PoSTakeoverHeight);
+    }
 
 
     CBlockIndex* pcheckpoint = Checkpoints::GetLastSyncCheckpoint();
