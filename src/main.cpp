@@ -2142,6 +2142,10 @@ bool CBlock::AcceptBlock()
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight+1;
 
+    // Don't accept any PoW aftter PoS Takover
+    if (IsProofOfWork() && (nHeight >= (int) PoSTakeoverHeight))
+        return DoS(100, error("CheckBlock() : Proof of work on or after block %d.\n", (int) PoSTakeoverHeight));
+
     // Check proof-of-work or proof-of-stake
     if (nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
         return DoS(100, error("AcceptBlock() : incorrect %s", IsProofOfWork() ? "proof-of-work" : "proof-of-stake"));
@@ -2257,8 +2261,8 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     if (pblock->IsProofOfWork() && (nHeight >= PoSTakeoverHeight)) {
         if (pfrom)
               pfrom->Misbehaving(100);
-        printf("Proof of work on or after block %d.\n", PoSTakeoverHeight);
-        return error("Proof of work on or after block %d.\n", PoSTakeoverHeight);
+        printf("Proof of work on or after block %d.\n", (int) PoSTakeoverHeight);
+        return error("Proof of work on or after block %d.\n", (int) PoSTakeoverHeight);
     }
 
 
