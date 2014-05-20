@@ -1,16 +1,50 @@
+# figure out windows
+win32 {
+    contains(QMAKE_HOST.arch, x86_64) {
+        message("x86_64 64-bit build")
+        WINBITS = 64
+    } else {
+        message("x86 32-bit build")
+        WINBITS = 32
+    }
+}
+win32 {
+   contains(WINBITS, 32) {
+     MSYS = MinGW/msys/1.0
+   } else {
+     MSYS = mingw64/msys
+   }
+}
+
 TEMPLATE = app
 TARGET = ebt-qt
-VERSION = 3.0.0.2
+VERSION = 3.0.1.1
 INCLUDEPATH += src src/json src/qt
-macx:INCLUDEPATH += /usr/local/BerkeleyDB.4.8/include # /usr/local/include
-windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/include/boost-1_55/
-windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/include
-windows:INCLUDEPATH += C:/MinGW/msys/1.0/local/ssl/include
-# INCLUDEPATH += C:/MinGW/msys/1.0/local/BerkeleyDB.4.8/include
-DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE \
-           BOOST_THREAD_PROVIDES_GENERIC_SHARED_MUTEX_ON_WIN __NO_SYSTEM_INCLUDES
+QT += core gui
 CONFIG += no_include_pwd
+CONFIG += thread+
+
 !macx:CONFIG += static
+
+macx:INCLUDEPATH += /usr/local/BerkeleyDB.4.8/include # /usr/local/include
+
+DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE \
+           BOOST_THREAD_PROVIDES_GENERIC_SHARED_MUTEX_ON_WIN \
+           __NO_SYSTEM_INCLUDES
+
+win32 {
+   contains(WINBITS, 32) {
+      INCLUDEPATH += C:/$$MSYS/local/include/boost-1_55/
+   } else {
+      INCLUDEPATH += C:/$$MSYS/local/include/boost-1_55/
+   }
+}
+win32:INCLUDEPATH += C:/$$MSYS/local/include
+win32:INCLUDEPATH += C:/$$MSYS/local/ssl/include
+
+win32:contains(WINBITS, 64) {
+   INCLUDEPATH += C:/$$MSYS/local/BerkeleyDB.4.8/include
+}
 
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
@@ -28,10 +62,10 @@ UI_DIR = build
 
 # use: qmake "RELEASE=1"
 contains(RELEASE, 1) {
-    # Mac: compile for maximum compatibility (10.7, 64-bit)
+    # Mac: ensure compatibility with at least 10.7, 64 bit
     macx:XXFLAGS += -mmacosx-version-min=10.7 -arch x86_64 \
                     -isysroot /Developer/SDKs/MacOSX10.7.sdk
-    !windows:!macx {
+    !win32:!macx {
         # Linux: static link
         LIBS += -Wl,-Bstatic
     }
@@ -46,11 +80,14 @@ contains(RELEASE, 1) {
 #   CONFIG += mystaticconfig
 # }
 
+
 # bug in gcc 4.4 breaks some pointer code
 # QMAKE_CXXFLAGS += -fno-strict-aliasing
-# can have strict aliasing if opt is 0
-QMAKE_CXXFLAGS_RELEASE -= -O2
-QMAKE_CXXFLAGS_RELEASE += -O0
+    win32:contains(WINBITS, 32) {
+      # can have strict aliasing if opt is 0
+      # QMAKE_CXXFLAGS_RELEASE -= -O2
+      QMAKE_CXXFLAGS_RELEASE += -O0
+}
 
 
 USE_QRCODE=1
@@ -59,8 +96,10 @@ USE_QRCODE=1
 contains(USE_QRCODE, 1) {
     message(Building with QRCode support)
     DEFINES += USE_QRCODE
-    windows:INCLUDEPATH += C:/qrencode-3.4.3
-    windows:LIBS += -L"C:/qrencode-3.4.3"
+    win32:contains(WINBITS, 32) {
+       INCLUDEPATH += C:/qrencode-3.4.3
+       LIBS += -L"C:/qrencode-3.4.3"
+    }
     macx:LIBS += /usr/local/lib/libqrencode.3.dylib
     LIBS += -lqrencode
 } else {
@@ -80,8 +119,15 @@ contains(USE_UPNP, -) {
         USE_UPNP=1
     }
     DEFINES += USE_UPNP=$$USE_UPNP STATICLIB
-    windows:INCLUDEPATH += C:/miniupnpc-1.9
-    windows:LIBS += -L"C:/miniupnpc-1.9/miniupnpc"
+    win32 {
+       contains(WINBITS, 32) {
+           INCLUDEPATH += C:/miniupnpc-1.9
+           LIBS += -L"C:/miniupnpc-1.9/miniupnpc"
+       } else {
+           INCLUDEPATH += "C:/$$MSYS/local/miniupnpc-1.9"
+           LIBS += -L"C:/$$MSYS/local/miniupnpc-1.9/miniupnpc"
+       }
+    }
     LIBS += -lminiupnpc
     win32:LIBS += -liphlpapi
 }
@@ -104,12 +150,20 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     QTPLUGIN += qcncodecs qjpcodecs qtwcodecs qkrcodecs qtaccessiblewidgets
 }
 
-!windows {
+
+
+!win32 {
     # for extra security against potential buffer overflows
     QMAKE_CXXFLAGS += -fstack-protector
     QMAKE_LFLAGS += -fstack-protector
     # do not enable this on windows, as it will result in a non-working executable!
 }
+
+!win32:!macx {
+    QMAKE_LFLAGS *= -static
+    QMAKE_LFLAGS *= -Wl
+}
+
 
 
 # regenerate src/build.h
@@ -124,7 +178,8 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
 
 QMAKE_CXXFLAGS += -msse2
 QMAKE_CFLAGS += -msse2
-QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter
+QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra\
+                         -Wformat -Wformat-security -Wno-unused-parameter
 
 
 # Input
@@ -333,8 +388,14 @@ OTHER_FILES += \
 
 # platform specific defaults, if not overridden on command line
 isEmpty(BOOST_LIB_SUFFIX) {
-    macx:BOOST_LIB_SUFFIX =  -mt
-    windows:BOOST_LIB_SUFFIX = -mgw44-mt-d-1_55
+    macx:BOOST_LIB_SUFFIX = -mt
+    win32 {
+      contains(WINBITS, 32) {
+         BOOST_LIB_SUFFIX = -mgw44-mt-d-1_55
+      } else {
+         BOOST_LIB_SUFFIX = -mgw47-mt-d-1_55
+      }
+    }
 }
 
 isEmpty(BOOST_THREAD_LIB_SUFFIX) {
@@ -342,7 +403,7 @@ isEmpty(BOOST_THREAD_LIB_SUFFIX) {
 }
 
 isEmpty(BDB_LIB_PATH) {
-    macx:BDB_LIB_PATH = /usr/local/BerkeleyDB.4.8/lib  # /opt/local/lib/db48
+    macx:BDB_LIB_PATH = /usr/local/BerkeleyDB.4.8/lib
 }
 
 isEmpty(BDB_LIB_SUFFIX) {
@@ -361,10 +422,10 @@ isEmpty(BOOST_INCLUDE_PATH) {
     macx:BOOST_INCLUDE_PATH = /opt/local/include
 }
 
-windows:DEFINES += WIN32
-windows:RC_FILE = src/qt/res/bitcoin-qt.rc
+win32:DEFINES += WIN32
+win32:RC_FILE = src/qt/res/bitcoin-qt.rc
 
-windows:!contains(MINGW_THREAD_BUGFIX, 0) {
+win32:!contains(MINGW_THREAD_BUGFIX, 0) {
     # At least qmake's win32-g++-cross profile is missing the -lmingwthrd
     # thread-safety flag. GCC has -mthreads to enable this, but it doesn't
     # work with static linking. -lmingwthrd must come BEFORE -lmingw, so
@@ -375,7 +436,7 @@ windows:!contains(MINGW_THREAD_BUGFIX, 0) {
     QMAKE_LIBS_QT_ENTRY = -lmingwthrd $$QMAKE_LIBS_QT_ENTRY
 }
 
-!windows:!macx {
+!win32:!macx {
     DEFINES += LINUX
     LIBS += -lrt
 }
@@ -385,33 +446,40 @@ macx:OBJECTIVE_SOURCES += src/qt/macdockiconhandler.mm
 macx:LIBS += -framework Foundation -framework ApplicationServices -framework AppKit
 macx:DEFINES += MAC_OSX MSG_NOSIGNAL=0
 macx:ICON = src/qt/res/icons/bitcoin.icns
-macx:TARGET = "EBT Qt"
 macx:QMAKE_CFLAGS_THREAD += -pthread
 macx:QMAKE_LFLAGS_THREAD += -pthread
 macx:QMAKE_CXXFLAGS_THREAD += -pthread
 
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
 INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH
-windows:LIBS += -L"C:/MinGW/msys/1.0/local/ssl/lib"
-# windows:LIBS += -L"C:/MinGW/msys/1.0/local/BerkeleyDB.4.8/lib"
-windows:LIBS += -L"C:/MinGW/msys/1.0/local/lib"
+win32:LIBS += -L"C:/$$MSYS/local/ssl/lib"
+win32:contains(WINBITS, 64) {
+    LIBS += -L"C:/$$MSYS/local/BerkeleyDB.4.8/lib"
+    LIBS += "C:/mingw64/bin/libwinpthread-1.dll"
+    LIBS += "C:/$$MSYS/local/lib/libboost_filesystem-mgw47-mt-d-1_55.dll"
+    LIBS += -static
+}
+win32:LIBS += -L"C:/$$MSYS/local/lib"
+# win32:LIBS += "C:/mingw64/x86_64-w64-mingw32/lib/libgcc_s_sjlj-1.dll"
+# win32:LIBS += "C:/mingw64/x86_64-w64-mingw32/lib/libstdc++-6.dll"
 LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) \
         $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
-
-windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-
+win32:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 LIBS += -lboost_system$$BOOST_LIB_SUFFIX \
         -lboost_filesystem$$BOOST_LIB_SUFFIX \
         -lboost_program_options$$BOOST_LIB_SUFFIX \
         -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
-LIBS += -lboost_atomic$$BOOST_LIB_SUFFIX
-windows:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
-# macx:LIBS += -L/usr/local/lib
+
+win32:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
+
+win32:contains(WINBITS, 64) {
+       LIBS += -pthread
+}
 
 contains(RELEASE, 1) {
-    !windows:!macx {
+    !win32:!macx {
         # Linux: turn dynamic linking back on for c/c++ runtime libraries
         LIBS += -Wl,-Bdynamic
     }

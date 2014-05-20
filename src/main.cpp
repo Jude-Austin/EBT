@@ -949,7 +949,7 @@ int64 GetProofOfWorkReward(unsigned int nHeight)
             nSubsidy = 500 * COIN;
         else if (nHeight < 300000)
             nSubsidy = 250 * COIN;
-        else if (nHeight < 310000)
+        else if (nHeight < PoSTakeoverHeight)
             nSubsidy = 125 * COIN;
 
         return nSubsidy;
@@ -2066,6 +2066,8 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot) const
     // Check coinbase reward
     int64 nTimeBlock = GetBlockTime();
     CBlockIndex* pindexPrev = pindexBest;
+    if ((pindexPrev->nHeight >= PoSTakeoverHeight) && (IsProofOfWork()))
+          return DoS(100, error("Proof of work on or after block %d.", PoSTakeoverHeight));
     if (nTimeBlock < REWARD_SWITCH_TIME) {
 		if (vtx[0].GetValueOut() > (IsProofOfWork()? MAX_MINT_PROOF_OF_WORK_LEGACY : 0))
 		    return DoS(50, error("CheckBlock() : coinbase reward exceeded %s > %s",
@@ -2248,6 +2250,16 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
         if (!mapProofOfStake.count(hash)) // add to mapProofOfStake
             mapProofOfStake.insert(make_pair(hash, hashProofOfStake));
     }
+
+    CBlockLocator locator;
+    unsigned int nHeight = locator.GetBlockIndex()->nHeight;
+
+    if (pblock->IsProofOfWork() && (nHeight >= PoSTakeoverHeight))
+        if (pfrom)
+              pfrom->Misbehaving(100);
+        printf("Proof of work on or after block %d.", PoSTakeoverHeight);
+        return error("Proof of work on or after block %d.", PoSTakeoverHeight);
+
 
     CBlockIndex* pcheckpoint = Checkpoints::GetLastSyncCheckpoint();
     if (pcheckpoint && pblock->hashPrevBlock != hashBestChain && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
