@@ -17,7 +17,7 @@ win32 {
 }
 
 TEMPLATE = app
-TARGET = ebt-qt
+TARGET = "EBT Qt"
 VERSION = 3.0.1.1
 INCLUDEPATH += src src/json src/qt
 QT += core gui
