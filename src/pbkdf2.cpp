@@ -3,6 +3,7 @@
 #include <string.h>
 #include "pbkdf2.h"
 
+/* getting rid of be32dec until it is needed
 static inline uint32_t
 be32dec(const void *pp)
 {
@@ -11,6 +12,7 @@ be32dec(const void *pp)
     return ((uint32_t)(p[3]) + ((uint32_t)(p[2]) << 8) +
         ((uint32_t)(p[1]) << 16) + ((uint32_t)(p[0]) << 24));
 }
+ */
 
 static inline void
 be32enc(void *pp, uint32_t x)
@@ -145,4 +147,3 @@ PBKDF2_SHA256(const uint8_t * passwd, size_t passwdlen, const uint8_t * salt,
     /* Clean PShctx, since we never called _Final on it. */
     memset(&PShctx, 0, sizeof(HMAC_SHA256_CTX));
 }
-

@@ -59,6 +59,8 @@ static const uint256 hashGenesisBlockTestNet("0x");
 
 static const int64 nMaxClockDrift = 2 * 60 * 60;        // two hours
 
+static const unsigned int PoSTakeoverHeight = 310000; // EBT: Go pure PoS, don't look back
+
 extern CScript COINBASE_FLAGS;
 
 
