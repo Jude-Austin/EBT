@@ -24,13 +24,19 @@ namespace Checkpoints
     //
     static MapCheckpoints mapCheckpoints =
         boost::assign::map_list_of
-        ( 0, hashGenesisBlockOfficial )
+        (       0, hashGenesisBlockOfficial )
+        (       1, uint256("0x0000233ff0649623da93721bbd0ae50567f092a6b25ed70bbb6be6dbb5ea15d2"))
+        (   70000, uint256("0x000000008dfe1a0248b1d004e8f09da0cb5ff0a0774d0dc89691931f9a443588"))
+        (  148965, uint256("0x00000001152f242aac954c4698888328b3399bf66dede8c6685054e2495c615d"))
+        (  210001, uint256("0x000000057f97806270256152227d4a6995f0769907386ff2bfdd497bde0f5f53"))
+        (  264656, uint256("0x0000000219e8f2ab079ce66d6cc68f7ede0c70c705c71c3d0896184f5e0c53b1"))
+        (  281394, uint256("0xcaa48cfd4dc1eebe726d028efd989b9f348359e30ce07021132588679e544e5e"))
+        (  289000, uint256("0x00000000508a8d2fecdfcac6a05f14da0fda491a66a0d6d016db1fa9fe12c456"))
         ;
 
     static MapCheckpoints mapCheckpointsTestnet =
         boost::assign::map_list_of
-        ( 0, hashGenesisBlockTestNet )
-		( 1, uint256("0x0000233ff0649623da93721bbd0ae50567f092a6b25ed70bbb6be6dbb5ea15d2") )
+        (       0, hashGenesisBlockTestNet )
         ;
 
     bool CheckHardened(int nHeight, const uint256& hash)
@@ -64,8 +70,8 @@ namespace Checkpoints
     }
 
     // ppcoin: synchronized checkpoint (centrally broadcasted)
-    uint256 hashSyncCheckpoint = 0;
-    uint256 hashPendingCheckpoint = 0;
+    uint256 hashSyncCheckpoint = uint256("0x00000000508a8d2fecdfcac6a05f14da0fda491a66a0d6d016db1fa9fe12c456");
+    uint256 hashPendingCheckpoint = uint256("0x00000000508a8d2fecdfcac6a05f14da0fda491a66a0d6d016db1fa9fe12c456");
     CSyncCheckpoint checkpointMessage;
     CSyncCheckpoint checkpointMessagePending;
     uint256 hashInvalidCheckpoint = 0;
@@ -76,7 +82,8 @@ namespace Checkpoints
     {
         LOCK(cs_hashSyncCheckpoint);
         if (!mapBlockIndex.count(hashSyncCheckpoint))
-            error("GetSyncCheckpoint: block index missing for current sync-checkpoint %s", hashSyncCheckpoint.ToString().c_str());
+            error("GetSyncCheckpoint: block index missing for current sync-checkpoint %s",
+                                                         hashSyncCheckpoint.ToString().c_str());
         else
             return mapBlockIndex[hashSyncCheckpoint];
         return NULL;
@@ -359,7 +366,11 @@ namespace Checkpoints
         // sync-checkpoint should always be accepted block
         assert(mapBlockIndex.count(hashSyncCheckpoint));
         const CBlockIndex* pindexSync = mapBlockIndex[hashSyncCheckpoint];
-        return (pindexSync->GetBlockTime() + nSeconds < GetAdjustedTime());
+        bool tooOld = (pindexSync->GetBlockTime() + nSeconds < GetAdjustedTime());
+        if (tooOld) {
+            printf("Sync-checkpoint too old: %s\n", hashSyncCheckpoint.ToString().c_str());
+        }
+        return tooOld;
     }
 }
 
